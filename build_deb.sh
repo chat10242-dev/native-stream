@@ -75,9 +75,9 @@ write_hashes() {
 }
 
 (
-cd "$REPO"
-PACKAGE_FILES=("dists/stable/main/binary-${ARCH}/Packages" "dists/stable/main/binary-${ARCH}/Packages.gz")
-cat > "dists/stable/Release" <<EOF
+cd "$REPO/dists/stable"
+PACKAGE_FILES=("main/binary-${ARCH}/Packages" "main/binary-${ARCH}/Packages.gz")
+cat > "Release" <<EOF
 Origin: NativeStream
 Label: NativeStream
 Suite: stable
