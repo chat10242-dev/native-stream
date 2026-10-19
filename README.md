@@ -46,12 +46,10 @@ This produces `native-stream-asm_1.3.0~alpha1-1_amd64.deb` and `native-stream-st
 GitHub Actions rebuilds and publishes both packages and the APT metadata to GitHub Pages on each push to `main`. Enable Pages in repository settings and select **GitHub Actions** as the source. The repository landing page and apt base URL will be `https://chat10242-dev.github.io/native-stream/`.
 
 ```sh
-echo 'deb [trusted=yes] https://chat10242-dev.github.io/native-stream/ stable main' | sudo tee /etc/apt/sources.list.d/native-stream.list
-sudo apt update
-sudo apt install native-stream-asm native-stream-studio
+curl -fsSL https://chat10242-dev.github.io/native-stream/install.sh | sudo bash
 ```
 
-The apt metadata is unsigned and the source line therefore uses `trusted=yes`. Packages target 64-bit Debian/Ubuntu (`amd64`).
+The installer adds the unsigned APT source and installs both packages. Review [install.sh](install.sh) before running it. Packages target 64-bit Debian/Ubuntu (`amd64`).
 
 ## Android assembly target
 

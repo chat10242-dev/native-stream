@@ -57,6 +57,7 @@ install -m 0644 "$ROOT/dist/native-stream-asm_${VERSION}-1_${ARCH}.deb" "$POOL/m
 install -m 0644 "$ROOT/dist/native-stream-studio_${VERSION}-1_${ARCH}.deb" "$POOL/main/n/native-stream-studio/"
 
 mkdir -p "$REPO/dists/stable/main/binary-${ARCH}"
+install -m 0644 "$ROOT/install.sh" "$REPO/install.sh"
 (
   cd "$REPO"
   dpkg-scanpackages --arch "$ARCH" pool /dev/null > "dists/stable/main/binary-${ARCH}/Packages"
@@ -81,10 +82,8 @@ cat > "$REPO/index.html" <<'EOF'
 <ul><li><code>native-stream-asm</code> — minimal assembly interface.</li><li><code>native-stream-studio</code> — richer C++ interface with capabilities and limitations.</li></ul>
 <p class="tag">Studio includes experimental X11/H.264 video and Android touch input over UDP. Host must be reachable by IPv4; NAT traversal, relay, encryption, audio, and Android video playback are not implemented.</p>
 <h2>Install on Debian or Ubuntu (amd64)</h2>
-<pre>echo 'deb [trusted=yes] https://chat10242-dev.github.io/native-stream/ stable main' | sudo tee /etc/apt/sources.list.d/native-stream.list
-sudo apt update
-sudo apt install native-stream-asm native-stream-studio</pre>
-<p>The APT metadata is currently unsigned. Use the repository line above only if you trust this project.</p>
+<pre>curl -fsSL https://chat10242-dev.github.io/native-stream/install.sh | sudo bash</pre>
+<p>The APT metadata is currently unsigned. Review and run the installer only if you trust this project.</p>
 <p>Direct packages: <a href="pool/main/n/native-stream-asm/native-stream-asm_${VERSION}-1_amd64.deb">assembly</a> · <a href="pool/main/n/native-stream-studio/native-stream-studio_${VERSION}-1_amd64.deb">studio</a></p>
 </html>
 EOF

@@ -92,10 +92,17 @@ void inputReceiver(uint16_t port, std::string pin) {
         InputPacket packet{};if(n!=static_cast<ssize_t>(sizeof(packet)))continue;std::memcpy(&packet,buf.data(),sizeof(packet));
         if(ntohl(packet.magic)!=0x4e53494e)continue;
         const uint16_t code=ntohs(packet.code);const int32_t x=static_cast<int32_t>(ntohl(static_cast<uint32_t>(packet.x)));const int32_t y=static_cast<int32_t>(ntohl(static_cast<uint32_t>(packet.y)));
-        if(packet.type==4){for(uint16_t k:downKeys)emitInput(device,EV_KEY,k,0);for(uint16_t k:downButtons)emitInput(device,EV_KEY,k,0);downKeys.clear();downButtons.clear();emitInput(device,EV_SYN,SYN_REPORT,0);}
+        if(packet.type==5){for(uint16_t k:downKeys)emitInput(device,EV_KEY,k,0);for(uint16_t k:downButtons)emitInput(device,EV_KEY,k,0);downKeys.clear();downButtons.clear();emitInput(device,EV_SYN,SYN_REPORT,0);}
         else if(packet.type==1&&code<=KEY_MAX){emitInput(device,EV_KEY,code,packet.down?1:0);if(packet.down)downKeys.insert(code);else downKeys.erase(code);emitInput(device,EV_SYN,SYN_REPORT,0);}
         else if(packet.type==2&&(code==BTN_LEFT||code==BTN_RIGHT)){emitInput(device,EV_KEY,code,packet.down?1:0);if(packet.down)downButtons.insert(code);else downButtons.erase(code);emitInput(device,EV_SYN,SYN_REPORT,0);}
         else if(packet.type==3){const int32_t mx=std::max(-2000,std::min(2000,x)),my=std::max(-2000,std::min(2000,y));if(mx)emitInput(device,EV_REL,REL_X,mx);if(my)emitInput(device,EV_REL,REL_Y,my);emitInput(device,EV_SYN,SYN_REPORT,0);}
+        else if(packet.type==4){
+            const uint16_t* keys=nullptr;const uint16_t wasd[]={KEY_W,KEY_A,KEY_S,KEY_D};const uint16_t arrows[]={KEY_UP,KEY_LEFT,KEY_DOWN,KEY_RIGHT};const uint16_t ijkl[]={KEY_I,KEY_J,KEY_K,KEY_L};
+            if(code==1)keys=arrows;else if(code==2)keys=ijkl;else keys=wasd;
+            const bool wanted[]={y < -350,x < -350,y > 350,x > 350};
+            for(int i=0;i<4;i++){bool held=downKeys.count(keys[i])!=0;if(wanted[i]&&!held){emitInput(device,EV_KEY,keys[i],1);downKeys.insert(keys[i]);}else if(!wanted[i]&&held){emitInput(device,EV_KEY,keys[i],0);downKeys.erase(keys[i]);}}
+            emitInput(device,EV_SYN,SYN_REPORT,0);
+        }
     }
     for(uint16_t k:downKeys) emitInput(device,EV_KEY,k,0);
     for(uint16_t k:downButtons) emitInput(device,EV_KEY,k,0);
