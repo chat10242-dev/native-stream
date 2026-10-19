@@ -14,7 +14,7 @@ if ! command -v apt-get >/dev/null 2>&1; then
     exit 1
 fi
 
-echo 'deb [trusted=yes] https://chat10242-dev.github.io/native-stream/ stable main' \
+echo 'deb [arch=amd64 trusted=yes] https://chat10242-dev.github.io/native-stream/ stable main' \
     > /etc/apt/sources.list.d/native-stream.list
 apt-get update
 DEBIAN_FRONTEND=noninteractive apt-get install -y native-stream-asm native-stream-studio

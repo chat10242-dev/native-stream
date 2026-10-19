@@ -63,15 +63,37 @@ install -m 0644 "$ROOT/install.sh" "$REPO/install.sh"
   dpkg-scanpackages --arch "$ARCH" pool /dev/null > "dists/stable/main/binary-${ARCH}/Packages"
   gzip -9 -n -c "dists/stable/main/binary-${ARCH}/Packages" > "dists/stable/main/binary-${ARCH}/Packages.gz"
 )
-cat > "$REPO/dists/stable/Release" <<EOF
+write_hashes() {
+  local tool="$1"
+  shift
+  local file hash size
+  for file in "$@"; do
+    hash="$("$tool" "$file" | awk '{print $1}')"
+    size="$(wc -c < "$file" | tr -d ' ')"
+    printf ' %s %s %s\n' "$hash" "$size" "$file"
+  done
+}
+
+(
+cd "$REPO"
+PACKAGE_FILES=("dists/stable/main/binary-${ARCH}/Packages" "dists/stable/main/binary-${ARCH}/Packages.gz")
+cat > "dists/stable/Release" <<EOF
 Origin: NativeStream
 Label: NativeStream
 Suite: stable
 Codename: stable
+Date: $(date -Ru)
 Architectures: ${ARCH}
 Components: main
 Description: NativeStream APT repository
+MD5Sum:
+$(write_hashes md5sum "${PACKAGE_FILES[@]}")
+SHA1:
+$(write_hashes sha1sum "${PACKAGE_FILES[@]}")
+SHA256:
+$(write_hashes sha256sum "${PACKAGE_FILES[@]}")
 EOF
+)
 cat > "$REPO/index.html" <<'EOF'
 <!doctype html>
 <html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
