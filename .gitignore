@@ -1,0 +1,15 @@
+# Local build outputs
+/main
+/main.o
+/android_main
+/android_aarch64.o
+/cpp_ui/native_stream_gui
+/android/.gradle/
+/android/local.properties
+/android/**/build/
+/work/
+/dist/
+/NativeStream-x86_64.AppImage
+/native_stream_config.txt
+/native_stream_profiles.txt
+/native_stream_remote.txt
