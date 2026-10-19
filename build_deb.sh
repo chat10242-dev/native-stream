@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VERSION="${VERSION:-1.3.0}"
+VERSION="${VERSION:-1.3.0~alpha1}"
 ARCH="amd64"
 REPO="$ROOT/dist/apt-repo"
 POOL="$REPO/pool"

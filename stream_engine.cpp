@@ -88,7 +88,8 @@ int host(const char* portText, const char* pin) {
     if (::bind(sock, reinterpret_cast<sockaddr*>(&local), sizeof(local)) < 0) {
         ::close(sock); ::close(pipefd[0]); ::kill(encoder, SIGTERM); std::perror("bind"); return 1;
     }
-    std::cout << "Attendo client UDP sulla porta " << port << " (solo rete raggiungibile).\n" << std::flush;
+    std::cout << "Attendo client UDP sulla porta " << port
+              << " (IP raggiungibile; flusso non cifrato: usa solo rete fidata/VPN).\n" << std::flush;
     sockaddr_in peer{};
     socklen_t peerLen = sizeof(peer);
     uint8_t hello[128];

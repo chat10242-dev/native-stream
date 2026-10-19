@@ -1,9 +1,9 @@
 # NativeStream
 
-NativeStream is a prototype for Debian/Ubuntu amd64 with two terminal interfaces that share one x86_64 Linux assembly engine:
+NativeStream is an early prototype for Debian/Ubuntu amd64 with two terminal interfaces:
 
-- `native-stream-asm`: minimal standalone menu and engine in assembly.
-- `native-stream-studio`: richer, colored C++ interface. Its Capabilities screen describes what works, what is still missing, and what distinguishes the assembly engine.
+- `native-stream-asm`: minimal standalone configuration menu written in assembly.
+- `native-stream-studio`: richer, colored C++ interface and experimental video-streaming engine.
 
 ## Current capabilities and limits
 
@@ -27,7 +27,7 @@ make
 make deb
 ```
 
-This produces `native-stream-asm_1.3.0-1_amd64.deb` and `native-stream-studio_1.3.0-1_amd64.deb`, plus the static APT repository under `dist/apt-repo`. Set another version with `VERSION=1.4.0 make deb`.
+This produces `native-stream-asm_1.3.0~alpha1-1_amd64.deb` and `native-stream-studio_1.3.0~alpha1-1_amd64.deb`, plus the static APT repository under `dist/apt-repo`. Set another version with `VERSION=1.3.0~alpha2 make deb`.
 
 GitHub Actions rebuilds and publishes both packages and the APT metadata to GitHub Pages on each push to `main`. Enable Pages in repository settings and select **GitHub Actions** as the source. The repository landing page and apt base URL will be `https://chat10242-dev.github.io/native-stream/`.
 
