@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VERSION="${VERSION:-1.2.0}"
+VERSION="${VERSION:-1.3.0}"
 ARCH="amd64"
 REPO="$ROOT/dist/apt-repo"
 POOL="$REPO/pool"
@@ -32,9 +32,8 @@ Priority: optional
 Architecture: ${ARCH}
 Maintainer: NativeStream <native-stream@users.noreply.github.com>
 Description: Minimal NativeStream terminal interface in x86_64 assembly
- NativeStream Assembly is the lightweight standalone terminal UI and engine.
- Configure up to three paths, save controller profiles, and choose a remote
- connection preference. Streaming and network connections are not implemented.
+ NativeStream Assembly is the lightweight standalone configuration interface.
+ The Studio package provides the experimental X11/H.264 UDP streaming engine.
 EOF
 cat > "$STUDIO/DEBIAN/control" <<EOF
 Package: native-stream-studio
@@ -43,11 +42,11 @@ Section: utils
 Priority: optional
 Architecture: ${ARCH}
 Maintainer: NativeStream <native-stream@users.noreply.github.com>
-Depends: native-stream-asm (>= ${VERSION}-1), libc6, libstdc++6
+Depends: native-stream-asm (>= ${VERSION}-1), libc6, libstdc++6, ffmpeg
 Description: NativeStream Studio C++ terminal control center
- The richer C++ terminal interface launches the NativeStream assembly engine.
- It explains implemented functions, current limitations, and design differences.
- Streaming and network connections are not implemented.
+ The richer C++ terminal interface offers experimental H.264 screen streaming.
+ It captures X11 with FFmpeg and sends video to a reachable IPv4 client over UDP.
+ No NAT traversal, relay, encryption, audio, or remote input is provided.
 EOF
 
 mkdir -p "$ROOT/dist"
@@ -77,9 +76,9 @@ cat > "$REPO/index.html" <<'EOF'
 <title>NativeStream APT</title>
 <style>body{font:16px system-ui,sans-serif;max-width:760px;margin:3rem auto;padding:0 1rem;color:#172033}code,pre{background:#eef2f7;padding:.25rem .4rem;border-radius:.3rem}pre{padding:1rem;overflow:auto}.tag{color:#087f5b}</style>
 <h1>NativeStream APT repository</h1>
-<p>Two terminal frontends share the x86_64 Linux assembly engine.</p>
+<p>Minimal Assembly and richer C++ terminal interfaces. Studio has experimental H.264 screen streaming.</p>
 <ul><li><code>native-stream-asm</code> — minimal assembly interface.</li><li><code>native-stream-studio</code> — richer C++ interface with capabilities and limitations.</li></ul>
-<p class="tag">Current limits: no video/audio capture, encoding, remote input, or network streaming is implemented.</p>
+<p class="tag">Studio includes experimental X11/H.264 video over UDP. Host must be reachable by IPv4; NAT traversal, relay, encryption, audio, and remote input are not implemented.</p>
 <h2>Install on Debian or Ubuntu (amd64)</h2>
 <pre>echo 'deb [trusted=yes] https://chat10242-dev.github.io/native-stream/ stable main' | sudo tee /etc/apt/sources.list.d/native-stream.list
 sudo apt update

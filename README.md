@@ -7,9 +7,9 @@ NativeStream is a prototype for Debian/Ubuntu amd64 with two terminal interfaces
 
 ## Current capabilities and limits
 
-It can save up to three executable paths, display and select a saved path, store simple controller profiles, and save a preferred connection strategy (LAN, direct, or relay).
+The Studio package includes an experimental one-way screen video stream: FFmpeg captures an X11 display, encodes H.264, and sends it over UDP to a client which decodes it with FFmpeg. The host and client use a shared PIN for a basic handshake.
 
-It does not currently launch the selected client executable, capture or encode video/audio, send remote input, authenticate peers, or establish network/streaming connections. The remote strategy is saved as a preference only. Studio explains these limits in the application.
+This is an early prototype, not a complete remote desktop. It requires an X11 host, FFmpeg with libx264 and ffplay, IPv4 reachability to the host, and a UDP path that does not block the selected port. It has no NAT traversal/rendezvous/relay, encryption, audio, remote input, congestion control, or robust recovery from packet loss. It will not connect arbitrary networks behind restrictive NATs without an external VPN, port mapping, or future relay service. Studio explains these limits in the application.
 
 ## Build
 
@@ -27,7 +27,7 @@ make
 make deb
 ```
 
-This produces `native-stream-asm_1.2.0-1_amd64.deb` and `native-stream-studio_1.2.0-1_amd64.deb`, plus the static APT repository under `dist/apt-repo`. Set another version with `VERSION=1.3.0 make deb`.
+This produces `native-stream-asm_1.3.0-1_amd64.deb` and `native-stream-studio_1.3.0-1_amd64.deb`, plus the static APT repository under `dist/apt-repo`. Set another version with `VERSION=1.4.0 make deb`.
 
 GitHub Actions rebuilds and publishes both packages and the APT metadata to GitHub Pages on each push to `main`. Enable Pages in repository settings and select **GitHub Actions** as the source. The repository landing page and apt base URL will be `https://chat10242-dev.github.io/native-stream/`.
 

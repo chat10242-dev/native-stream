@@ -4,8 +4,8 @@ TARGET = native_stream_gui
 
 all: $(TARGET)
 
-$(TARGET): main.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $<
+$(TARGET): main.cpp ../stream_engine.cpp ../stream_engine.hpp
+	$(CXX) $(CXXFLAGS) -o $@ main.cpp ../stream_engine.cpp
 
 clean:
 	rm -f $(TARGET)
