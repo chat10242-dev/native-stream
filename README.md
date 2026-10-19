@@ -9,7 +9,21 @@ NativeStream is an early prototype for Debian/Ubuntu amd64 with two terminal int
 
 The Studio package includes an experimental one-way screen video stream: FFmpeg captures an X11 display, encodes H.264, and sends it over UDP to a client which decodes it with FFmpeg. The host and client use a shared PIN for a basic handshake.
 
-This is an early prototype, not a complete remote desktop. It requires an X11 host, FFmpeg with libx264 and ffplay, IPv4 reachability to the host, and a UDP path that does not block the selected port. It has no NAT traversal/rendezvous/relay, encryption, audio, remote input, congestion control, or robust recovery from packet loss. It will not connect arbitrary networks behind restrictive NATs without an external VPN, port mapping, or future relay service. Studio explains these limits in the application.
+This is an early prototype, not a complete remote desktop. It requires an X11 host, FFmpeg with libx264 and ffplay, `/dev/uinput` access for remote controls, IPv4 reachability to the host, and UDP ports `47999` and `48000` (or the selected port and the next port) allowed through the firewall. It has no NAT traversal/rendezvous/relay, encryption, audio, Android video playback, congestion control, or robust recovery from packet loss. It will not connect arbitrary networks behind restrictive NATs without an external VPN, port mapping, or future relay service. Studio explains these limits in the application.
+
+The Android app now lets you create a separate touch layout for each game, move its buttons, and change each button's keyboard/mouse binding. The crosshair Mira button holds right mouse; the Fuoco button holds left mouse. Dragging on any uncovered part of the layout sends relative mouse movement. The Linux host injects those events through `/dev/uinput`; the user needs access to that device. The Android screen is currently a control-layout prototype without video playback, and input packets are not encrypted. Use only on a trusted network or VPN.
+
+To enable the Linux virtual input device, load the kernel module and grant the intended account access to `/dev/uinput` (then sign out and back in):
+
+```sh
+sudo modprobe uinput
+echo 'KERNEL=="uinput", GROUP="input", MODE="0660"' | sudo tee /etc/udev/rules.d/99-native-stream-uinput.rules
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+sudo usermod -aG input "$USER"
+```
+
+Only do this on a machine where you trust the remote-control client: this prototype sends unencrypted key and mouse events.
 
 ## Build
 

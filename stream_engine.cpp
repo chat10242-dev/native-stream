@@ -8,6 +8,8 @@
 #include <fcntl.h>
 #include <iostream>
 #include <algorithm>
+#include <linux/input.h>
+#include <linux/uinput.h>
 #include <netinet/in.h>
 #include <poll.h>
 #include <string>
@@ -15,6 +17,9 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/wait.h>
+#include <thread>
+#include <set>
+#include <chrono>
 #include <unistd.h>
 #include <vector>
 
@@ -39,10 +44,63 @@ bool parsePort(const char* text, uint16_t& port) {
     try {
         size_t used = 0;
         const unsigned long n = std::stoul(text, &used);
-        if (used != std::strlen(text) || n == 0 || n > 65535) return false;
+        if (used != std::strlen(text) || n == 0 || n > 65534) return false;
         port = static_cast<uint16_t>(n);
         return true;
     } catch (...) { return false; }
+}
+
+struct __attribute__((packed)) InputPacket {
+    uint32_t magic;
+    uint8_t type; // 1 key, 2 mouse button, 3 relative mouse movement
+    uint8_t down;
+    uint16_t code;
+    int32_t x;
+    int32_t y;
+};
+
+void emitInput(int fd, uint16_t type, uint16_t code, int32_t value) {
+    input_event ev{}; gettimeofday(&ev.time, nullptr); ev.type=type; ev.code=code; ev.value=value;
+    (void)::write(fd, &ev, sizeof(ev));
+}
+
+void inputReceiver(uint16_t port, std::string pin) {
+    int device=::open("/dev/uinput",O_WRONLY|O_NONBLOCK);
+    if(device<0){std::cerr<<"Controlli remoti disattivati: apri /dev/uinput con i permessi del tuo utente.\n";return;}
+    ::ioctl(device,UI_SET_EVBIT,EV_SYN);::ioctl(device,UI_SET_EVBIT,EV_KEY);::ioctl(device,UI_SET_EVBIT,EV_REL);
+    for(int code=0;code<=KEY_MAX;code++)::ioctl(device,UI_SET_KEYBIT,code);
+    ::ioctl(device,UI_SET_RELBIT,REL_X);::ioctl(device,UI_SET_RELBIT,REL_Y);
+    uinput_setup setup{}; setup.id.bustype=BUS_USB;setup.id.vendor=0x1209;setup.id.product=0x4e53;
+    std::strncpy(setup.name,"NativeStream Game Touch",UINPUT_MAX_NAME_SIZE-1);
+    if(::ioctl(device,UI_DEV_SETUP,&setup)<0||::ioctl(device,UI_DEV_CREATE)<0){std::perror("uinput setup");::close(device);return;}
+    const int sock=::socket(AF_INET,SOCK_DGRAM,0);
+    if(sock<0){::ioctl(device,UI_DEV_DESTROY);::close(device);return;}
+    sockaddr_in local{};local.sin_family=AF_INET;local.sin_addr.s_addr=htonl(INADDR_ANY);local.sin_port=htons(port);
+    if(::bind(sock,reinterpret_cast<sockaddr*>(&local),sizeof(local))<0){std::perror("bind input");::close(sock);::ioctl(device,UI_DEV_DESTROY);::close(device);return;}
+    pollfd pfd{sock,POLLIN,0};
+    sockaddr_in peer{},authorizedPeer{};socklen_t peerLen=sizeof(peer);bool paired=false;
+    std::vector<uint8_t> buf(256);
+    std::set<uint16_t> downKeys,downButtons;
+    const std::string expectedHello="NSINPUT:"+pin;
+    auto lastSeen=std::chrono::steady_clock::now();
+    while(!gStop){int ready=::poll(&pfd,1,300);if(ready<=0){if(paired&&std::chrono::steady_clock::now()-lastSeen>std::chrono::seconds(4)){for(uint16_t k:downKeys)emitInput(device,EV_KEY,k,0);for(uint16_t k:downButtons)emitInput(device,EV_KEY,k,0);emitInput(device,EV_SYN,SYN_REPORT,0);downKeys.clear();downButtons.clear();paired=false;}continue;}
+        const ssize_t n=::recvfrom(sock,buf.data(),buf.size(),0,reinterpret_cast<sockaddr*>(&peer),&peerLen);if(n<=0)continue;
+        if(!paired){if(static_cast<size_t>(n)!=expectedHello.size()||std::memcmp(buf.data(),expectedHello.data(),expectedHello.size())!=0)continue;authorizedPeer=peer;lastSeen=std::chrono::steady_clock::now();paired=true;std::cerr<<"Canale comandi collegato (non cifrato).\n";continue;}
+        if(peer.sin_addr.s_addr!=authorizedPeer.sin_addr.s_addr||peer.sin_port!=authorizedPeer.sin_port)continue;
+        lastSeen=std::chrono::steady_clock::now();
+        if(static_cast<size_t>(n)==expectedHello.size()&&std::memcmp(buf.data(),expectedHello.data(),expectedHello.size())==0)continue;
+        InputPacket packet{};if(n!=static_cast<ssize_t>(sizeof(packet)))continue;std::memcpy(&packet,buf.data(),sizeof(packet));
+        if(ntohl(packet.magic)!=0x4e53494e)continue;
+        const uint16_t code=ntohs(packet.code);const int32_t x=static_cast<int32_t>(ntohl(static_cast<uint32_t>(packet.x)));const int32_t y=static_cast<int32_t>(ntohl(static_cast<uint32_t>(packet.y)));
+        if(packet.type==4){for(uint16_t k:downKeys)emitInput(device,EV_KEY,k,0);for(uint16_t k:downButtons)emitInput(device,EV_KEY,k,0);downKeys.clear();downButtons.clear();emitInput(device,EV_SYN,SYN_REPORT,0);}
+        else if(packet.type==1&&code<=KEY_MAX){emitInput(device,EV_KEY,code,packet.down?1:0);if(packet.down)downKeys.insert(code);else downKeys.erase(code);emitInput(device,EV_SYN,SYN_REPORT,0);}
+        else if(packet.type==2&&(code==BTN_LEFT||code==BTN_RIGHT)){emitInput(device,EV_KEY,code,packet.down?1:0);if(packet.down)downButtons.insert(code);else downButtons.erase(code);emitInput(device,EV_SYN,SYN_REPORT,0);}
+        else if(packet.type==3){const int32_t mx=std::max(-2000,std::min(2000,x)),my=std::max(-2000,std::min(2000,y));if(mx)emitInput(device,EV_REL,REL_X,mx);if(my)emitInput(device,EV_REL,REL_Y,my);emitInput(device,EV_SYN,SYN_REPORT,0);}
+    }
+    for(uint16_t k:downKeys) emitInput(device,EV_KEY,k,0);
+    for(uint16_t k:downButtons) emitInput(device,EV_KEY,k,0);
+    emitInput(device,EV_SYN,SYN_REPORT,0);
+    ::close(sock);::ioctl(device,UI_DEV_DESTROY);::close(device);
 }
 
 int spawnFfmpeg(const std::vector<std::string>& args, int inputFd, int outputFd) {
@@ -63,6 +121,7 @@ int spawnFfmpeg(const std::vector<std::string>& args, int inputFd, int outputFd)
 }
 
 int host(const char* portText, const char* pin) {
+    gStop=0;
     uint16_t port = 0;
     if (!parsePort(portText, port)) { std::cerr << "Porta non valida.\n"; return 2; }
     int pipefd[2];
@@ -79,7 +138,7 @@ int host(const char* portText, const char* pin) {
 
     const int sock = ::socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) { ::close(pipefd[0]); ::kill(encoder, SIGTERM); std::perror("socket"); return 1; }
-    timeval handshakeTimeout{30, 0};
+    timeval handshakeTimeout{1, 0};
     ::setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &handshakeTimeout, sizeof(handshakeTimeout));
     sockaddr_in local{};
     local.sin_family = AF_INET;
@@ -88,23 +147,21 @@ int host(const char* portText, const char* pin) {
     if (::bind(sock, reinterpret_cast<sockaddr*>(&local), sizeof(local)) < 0) {
         ::close(sock); ::close(pipefd[0]); ::kill(encoder, SIGTERM); std::perror("bind"); return 1;
     }
+    std::thread inputs(inputReceiver,static_cast<uint16_t>(port+1),std::string(pin));
+    std::signal(SIGINT, stopHandler);
+    std::signal(SIGTERM, stopHandler);
     std::cout << "Attendo client UDP sulla porta " << port
               << " (IP raggiungibile; flusso non cifrato: usa solo rete fidata/VPN).\n" << std::flush;
-    sockaddr_in peer{};
-    socklen_t peerLen = sizeof(peer);
-    uint8_t hello[128];
-    const ssize_t helloLen = ::recvfrom(sock, hello, sizeof(hello), 0,
-        reinterpret_cast<sockaddr*>(&peer), &peerLen);
     const std::string expected = std::string("NATIVE1:") + pin;
-    if (helloLen != static_cast<ssize_t>(expected.size()) ||
-        std::memcmp(hello, expected.data(), expected.size()) != 0) {
-        std::cerr << "Handshake/PIN non valido o timeout dopo 30 secondi.\n";
-        ::close(sock); ::close(pipefd[0]); ::kill(encoder, SIGTERM); return 1;
+    sockaddr_in peer{};socklen_t peerLen=sizeof(peer);uint8_t hello[128];bool paired=false;
+    while(!gStop){peerLen=sizeof(peer);const ssize_t helloLen=::recvfrom(sock,hello,sizeof(hello),0,reinterpret_cast<sockaddr*>(&peer),&peerLen);
+        if(helloLen<0&&(errno==EAGAIN||errno==EWOULDBLOCK||errno==EINTR))continue;
+        if(helloLen==static_cast<ssize_t>(expected.size())&&std::memcmp(hello,expected.data(),expected.size())==0){paired=true;break;}
+    }
+    if(!paired){gStop=1;inputs.join();::close(sock);::close(pipefd[0]);::kill(encoder,SIGTERM);return 1;
     }
     const char* ok = "NATIVE1:OK";
     ::sendto(sock, ok, std::strlen(ok), 0, reinterpret_cast<sockaddr*>(&peer), peerLen);
-    std::signal(SIGINT, stopHandler);
-    std::signal(SIGTERM, stopHandler);
     std::cerr << "Client collegato: " << inet_ntoa(peer.sin_addr) << ". Ctrl+C per fermare.\n";
 
     uint32_t sequence = 0;
@@ -125,7 +182,7 @@ int host(const char* portText, const char* pin) {
             ::sendto(sock, packet, sizeof(h) + count, 0, reinterpret_cast<sockaddr*>(&peer), peerLen);
         }
     }
-    ::close(sock); ::close(pipefd[0]); ::kill(encoder, SIGTERM); ::waitpid(encoder, nullptr, 0);
+    gStop=1;inputs.join();::close(sock); ::close(pipefd[0]); ::kill(encoder, SIGTERM); ::waitpid(encoder, nullptr, 0);
     return 0;
 }
 

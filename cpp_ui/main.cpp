@@ -96,7 +96,8 @@ void printCapabilities() {
               << "  • Salvare una preferenza di connessione LAN, diretta o relay.\n\n";
     std::cout << kRed << "COSA NON FA ANCORA" << kReset << '\n'
               << "  • Video sperimentale H.264 via UDP su IPv4 raggiungibile.\n"
-              << "  • Non invia input remoto e non trasmette audio.\n"
+              << "  • Input touch Android sperimentale via uinput (se autorizzato).\n"
+              << "  • Non trasmette audio e l'app Android non mostra ancora il video.\n"
               << "  • La selezione client mostra il percorso, non avvia lo streaming.\n"
               << "  • Non include rendezvous, attraversamento NAT o relay: reti diverse\n"
               << "    funzionano solo se l'host è già raggiungibile (es. VPN/port mapping).\n"

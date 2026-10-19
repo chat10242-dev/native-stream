@@ -46,7 +46,8 @@ Depends: native-stream-asm (>= ${VERSION}-1), libc6, libstdc++6, ffmpeg
 Description: NativeStream Studio C++ terminal control center
  The richer C++ terminal interface offers experimental H.264 screen streaming.
  It captures X11 with FFmpeg and sends video to a reachable IPv4 client over UDP.
- No NAT traversal, relay, encryption, audio, or remote input is provided.
+ Android touch input uses Linux uinput when enabled; no NAT traversal, relay,
+ encryption, audio, or Android video playback is provided.
 EOF
 
 mkdir -p "$ROOT/dist"
@@ -78,7 +79,7 @@ cat > "$REPO/index.html" <<'EOF'
 <h1>NativeStream APT repository</h1>
 <p>Minimal Assembly and richer C++ terminal interfaces. Studio has experimental H.264 screen streaming.</p>
 <ul><li><code>native-stream-asm</code> — minimal assembly interface.</li><li><code>native-stream-studio</code> — richer C++ interface with capabilities and limitations.</li></ul>
-<p class="tag">Studio includes experimental X11/H.264 video over UDP. Host must be reachable by IPv4; NAT traversal, relay, encryption, audio, and remote input are not implemented.</p>
+<p class="tag">Studio includes experimental X11/H.264 video and Android touch input over UDP. Host must be reachable by IPv4; NAT traversal, relay, encryption, audio, and Android video playback are not implemented.</p>
 <h2>Install on Debian or Ubuntu (amd64)</h2>
 <pre>echo 'deb [trusted=yes] https://chat10242-dev.github.io/native-stream/ stable main' | sudo tee /etc/apt/sources.list.d/native-stream.list
 sudo apt update

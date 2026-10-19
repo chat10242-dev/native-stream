@@ -10,8 +10,8 @@ android {
         applicationId = "com.nativeStream.asm"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.3.0-alpha1"
     }
 
     buildTypes {

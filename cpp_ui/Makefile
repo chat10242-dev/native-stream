@@ -1,5 +1,5 @@
 CXX ?= g++
-CXXFLAGS ?= -std=c++17 -O2 -Wall -Wextra -Wpedantic -s
+CXXFLAGS ?= -std=c++17 -O2 -Wall -Wextra -Wpedantic -s -pthread
 TARGET = native_stream_gui
 
 all: $(TARGET)
