@@ -148,8 +148,11 @@ int client(const char* address, const char* portText, const char* pin) {
     if (::inet_pton(AF_INET, address, &hostAddr.sin_addr) != 1) {
         std::cerr << "Indirizzo IPv4 non valido.\n"; ::close(sock); ::close(pipefd[1]); ::kill(player, SIGTERM); return 2;
     }
+    if (::connect(sock, reinterpret_cast<sockaddr*>(&hostAddr), sizeof(hostAddr)) < 0) {
+        ::perror("connect UDP"); ::close(sock); ::close(pipefd[1]); ::kill(player, SIGTERM); return 1;
+    }
     const std::string hello = std::string("NATIVE1:") + pin;
-    if (::sendto(sock, hello.data(), hello.size(), 0, reinterpret_cast<sockaddr*>(&hostAddr), sizeof(hostAddr)) < 0) {
+    if (::send(sock, hello.data(), hello.size(), 0) < 0) {
         ::perror("sendto"); ::close(sock); ::close(pipefd[1]); ::kill(player, SIGTERM); return 1;
     }
     uint8_t packet[sizeof(PacketHeader) + kChunk];
@@ -193,6 +196,7 @@ int client(const char* address, const char* portText, const char* pin) {
 } // namespace
 
 int runStreamEngine(int argc, char** argv) {
+    std::signal(SIGPIPE, SIG_IGN);
     if (argc >= 2 && std::strcmp(argv[1], "--host") == 0) {
         if (argc != 4) { std::cerr << "Uso: native-stream-studio --host PORTA PIN\n"; return 2; }
         return host(argv[2], argv[3]);
